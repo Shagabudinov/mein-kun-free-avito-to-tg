@@ -1,0 +1,19 @@
+{
+  "name": "mein-kun",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "avitoReader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.0",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
