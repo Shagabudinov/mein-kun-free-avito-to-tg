@@ -5,7 +5,7 @@ import { supabase } from './supabaseInit.js';
 dotenv.config();
 
 let pageNumber = 1;
-const url = process.env.AVITO_SEARCH_URL;
+const url = process.env.HH_SEARCH_URL;
 
 const filterItems = (items) => {
   return items.filter((item) => {
@@ -20,15 +20,21 @@ const filterItems = (items) => {
 
 async function addToSupaBase(items) {
   const itemsToTable = items.map((item) => {
+    const from = item?.compensation?.from;
+    const to = item?.compensation?.to;
+    const currency = item?.compensation?.currencyCode?.replace('RUR', 'RUB');
+    const money = !from ?? !to
+      ? 'Зп не указана'
+      : from && !to
+      ? `От ${from} ${currency}`
+      : !from && to
+      ? `До ${from} ${currency}`
+      : `${from}-${to} ${currency}`;
     return {
-      id: item.id,
-      url: item.urlPath,
-      price: item.priceDetailed.value,
-      title: item.title,
-      description: item.description,
+      id: item.vacancyId,
+      title: item.name,
+      money: money,
       sended_to_telegram: false,
-      city: item.location.name,
-      image: item.images[0]['864x864'],
     };
   });
 
@@ -36,7 +42,7 @@ async function addToSupaBase(items) {
     try {
       // Проверяем наличие записей с таким id и sended_to_telegram == true
       const existingItems = await supabase
-        .from('mein-kun')
+        .from('hh')
         .select('id, sended_to_telegram')
         .in(
           'id',
@@ -53,7 +59,7 @@ async function addToSupaBase(items) {
 
       if (filteredItems.length > 0) {
         const { data, error } = await supabase
-          .from('mein-kun')
+          .from('hh')
           .upsert(filteredItems, { onConflict: 'id' });
 
         if (error) {
@@ -75,26 +81,27 @@ async function addToSupaBase(items) {
   }
 }
 
-const getDataFromAvito = () => {
+const getDataFromHH = () => {
   setInterval(async () => {
     try {
-      const response = await axios.get(`${url}&page=${pageNumber}`);
+      //console.log(`${url}&page=${pageNumber}`);
+      const response = await axios.get(`${url}`);
       pageNumber += 1;
-      console.log(response.data.totalCount);
-      const items = response.data.items;
+      console.log(response.data.vacancySearchResult.vacancies.length);
+      const items = response.data.vacancySearchResult.vacancies;
       console.log(items.length);
 
       // Фильтруем данные
-      const filteredItems = filterItems(items);
+      //const filteredItems = filterItems(items);
 
       // Добавляем отфильтрованные данные в базу
-      await addToSupaBase(filteredItems);
+      await addToSupaBase(items);
 
-      console.log(`Обработано ${filteredItems.length} элементов.`);
+      //console.log(`Обработано ${filteredItems.length} элементов.`);
     } catch (error) {
       console.error('Ошибка при получении данных с Avito:', error);
     }
   }, 3000);
 };
 
-getDataFromAvito();
+getDataFromHH();
