@@ -17,7 +17,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 bot = Bot(token=TELEGRAM_TOKEN)
 
 last_sent_time = 0
-message_interval = 5
+message_interval = 60
 
 async def send_start_message():
     """Отправить сообщение при запуске бота"""
@@ -73,7 +73,7 @@ async def check_and_send():
                 last_sent_time = current_time
                 break
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
 
 async def main():
     try:

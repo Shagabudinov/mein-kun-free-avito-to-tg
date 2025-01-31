@@ -1,6 +1,7 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseInit.js';
+import { addressLocalities } from './adresses.js';
 
 dotenv.config();
 
@@ -10,10 +11,12 @@ const url = process.env.AVITO_SEARCH_URL;
 const filterItems = (items) => {
   return items.filter((item) => {
     const region = item.geo.formattedAddress.split(',')[0];
+    const addressLocality = item.location.name;
     return (
-      item['priceDetailed']?.value < 6000 &&
+      item['priceDetailed']?.value <= 6000 &&
       item['priceDetailed']?.value !== null &&
-      region === 'Краснодарский край'
+      addressLocalities.includes(addressLocality)
+      //region === 'Краснодарский край'
     );
   });
 };
@@ -71,21 +74,28 @@ async function addToSupaBase(items) {
     }
   } else {
     console.log('Нет данных для добавления.');
-    pageNumber = 1;
   }
 }
 
 const getDataFromAvito = () => {
   setInterval(async () => {
     try {
+      console.log(
+        '\n##############################################################################\n'
+      );
       const response = await axios.get(`${url}&page=${pageNumber}`);
+      console.log(`page: ${pageNumber}`);
       pageNumber += 1;
-      console.log(response.data.totalCount);
+      console.log(`Всего объявлений: ${response.data.totalCount}`);
       const items = response.data.items;
-      console.log(items.length);
+      console.log(`Получено объявлений в запросе: ${items.length}`);
+      if (items.length == 0) {
+        pageNumber = 1;
+      }
 
       // Фильтруем данные
       const filteredItems = filterItems(items);
+      console.log(`Прошли фильтры: ${filteredItems.length}`);
 
       // Добавляем отфильтрованные данные в базу
       await addToSupaBase(filteredItems);
@@ -93,6 +103,10 @@ const getDataFromAvito = () => {
       console.log(`Обработано ${filteredItems.length} элементов.`);
     } catch (error) {
       console.error('Ошибка при получении данных с Avito:', error);
+    } finally {
+      console.log(
+        '\n##############################################################################\n'
+      );
     }
   }, 3000);
 };
