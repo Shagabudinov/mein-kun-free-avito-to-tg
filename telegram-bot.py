@@ -21,7 +21,7 @@ message_interval = 5
 
 async def send_start_message():
     """Отправить сообщение при запуске бота"""
-    await bot.send_message(chat_id=CHAT_ID, text="Бот запущен")
+    #await bot.send_message(chat_id=CHAT_ID, text="Бот запущен")
 
 async def send_shutdown_message():
     """Отправить сообщение при отключении бота"""
