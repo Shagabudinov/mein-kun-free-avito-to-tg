@@ -2,6 +2,8 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseInit.js';
 
+const keyWords = ['frontend', 'фронтенд']
+
 dotenv.config();
 
 let pageNumber = 1;
@@ -9,12 +11,9 @@ const url = process.env.HH_SEARCH_URL;
 
 const filterItems = (items) => {
   return items.filter((item) => {
-    const region = item.geo.formattedAddress.split(',')[0];
-    return (
-      item['priceDetailed']?.value < 6000 &&
-      item['priceDetailed']?.value !== null &&
-      region === 'Краснодарский край'
-    );
+    const title = item.name.toLowerCase();
+    return (title.includes(keyWords[0]) || title.includes(keyWords[1]));
+
   });
 };
 
@@ -87,15 +86,15 @@ const getDataFromHH = () => {
       //console.log(`${url}&page=${pageNumber}`);
       const response = await axios.get(`${url}`);
       pageNumber += 1;
-      console.log(response.data.vacancySearchResult.vacancies.length);
       const items = response.data.vacancySearchResult.vacancies;
-      console.log(items.length);
+      console.log(`Вакансий всего: ${items.length}`);
 
       // Фильтруем данные
-      //const filteredItems = filterItems(items);
+      const filteredItems = filterItems(items);
+      console.log(`Вакансий для frontend: ${filteredItems.length}`);
 
       // Добавляем отфильтрованные данные в базу
-      await addToSupaBase(items);
+      await addToSupaBase(filteredItems);
 
       //console.log(`Обработано ${filteredItems.length} элементов.`);
     } catch (error) {
