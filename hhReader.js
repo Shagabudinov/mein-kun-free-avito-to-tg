@@ -2,7 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseInit.js';
 
-const keyWords = ['frontend', 'фронтенд']
+const keyWords = ['frontend', 'фронтенд', 'react']
 
 dotenv.config();
 
@@ -12,7 +12,11 @@ const url = process.env.HH_SEARCH_URL;
 const filterItems = (items) => {
   return items.filter((item) => {
     const title = item.name.toLowerCase();
-    return (title.includes(keyWords[0]) || title.includes(keyWords[1]));
+    return (
+      title.includes(keyWords[0]) ||
+      title.includes(keyWords[1]) ||
+      title.includes(keyWords[2])
+    );
 
   });
 };
