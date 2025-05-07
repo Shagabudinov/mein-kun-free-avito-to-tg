@@ -2,7 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseInit.js';
 
-const keyWords = ['frontend', 'фронтенд', 'react']
+const keyWords = ['frontend', 'фронтенд', 'react'];
 
 dotenv.config();
 
@@ -17,7 +17,6 @@ const filterItems = (items) => {
       title.includes(keyWords[1]) ||
       title.includes(keyWords[2])
     );
-
   });
 };
 
@@ -26,17 +25,24 @@ async function addToSupaBase(items) {
     const from = item?.compensation?.from;
     const to = item?.compensation?.to;
     const currency = item?.compensation?.currencyCode?.replace('RUR', 'RUB');
-    const money = !from ?? !to
-      ? 'Зп не указана'
-      : from && !to
-      ? `От ${from} ${currency}`
-      : !from && to
-      ? `До ${from} ${currency}`
-      : `${from}-${to} ${currency}`;
+    const money =
+      !from && !to
+        ? 'Зп не указана'
+        : from && !to
+        ? `От ${from} ${currency}`
+        : !from && to
+        ? `До ${to} ${currency}`
+        : `${from}-${to} ${currency}`;
+
     return {
       id: item.vacancyId,
       title: item.name,
       money: money,
+      // Добавлены новые поля из объекта snippet
+      req: item.snippet?.req || 'Не указаны',
+      resp: item.snippet?.resp || 'Не указаны',
+      cond: item.snippet?.cond || 'Не указано',
+      skill: item.snippet?.skill || 'Не указаны',
       sended_to_telegram: false,
     };
   });
@@ -45,7 +51,7 @@ async function addToSupaBase(items) {
     try {
       // Проверяем наличие записей с таким id и sended_to_telegram == true
       const existingItems = await supabase
-        .from('hh')
+        .from('hh-alice')
         .select('id, sended_to_telegram')
         .in(
           'id',
@@ -62,7 +68,7 @@ async function addToSupaBase(items) {
 
       if (filteredItems.length > 0) {
         const { data, error } = await supabase
-          .from('hh')
+          .from('hh-alice')
           .upsert(filteredItems, { onConflict: 'id' });
 
         if (error) {
@@ -94,7 +100,8 @@ const getDataFromHH = () => {
       console.log(`Вакансий всего: ${items.length}`);
 
       // Фильтруем данные
-      const filteredItems = filterItems(items);
+      //const filteredItems = filterItems(items);
+      const filteredItems = items;
       console.log(`Вакансий для frontend: ${filteredItems.length}`);
 
       // Добавляем отфильтрованные данные в базу
@@ -106,5 +113,6 @@ const getDataFromHH = () => {
     }
   }, 60000);
 };
+
 
 getDataFromHH();
