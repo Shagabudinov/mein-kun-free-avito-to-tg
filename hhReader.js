@@ -2,9 +2,19 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { supabase } from './supabaseInit.js';
 
-const keyWords = ['frontend', 'фронтенд', 'react']
-
 dotenv.config();
+
+const keyWords = ['frontend', 'фронтенд', 'react'];
+
+const stopWords = [
+  'охрана', 'охранник', 'дом работница', 'дом работник', 'дворник', 'няня',
+  'воспитатель', 'водитель', 'кладовщик', 'сантехник', 'кассир', 'грузчик',
+  'экономист', 'бухгалтер', 'слесарь', 'автомеханик', 'бариста', 'официант',
+  'плотник', 'монтажник', 'маляр', 'токарь', 'финансист', 'ремонтник', 'юрист',
+  'электротехник', 'стоматолог', 'врач', 'медицинская сестра', 'медицинский брат',
+  'санитарка', 'склад', 'сварщик', 'плиточник', 'литейщик', 'терапевт',
+  'дорожный рабочий', 'повар', 'энергетик', 'машинист'
+];
 
 let pageNumber = 1;
 const url = process.env.HH_SEARCH_URL;
@@ -12,12 +22,12 @@ const url = process.env.HH_SEARCH_URL;
 const filterItems = (items) => {
   return items.filter((item) => {
     const title = item.name.toLowerCase();
-    return (
-      title.includes(keyWords[0]) ||
-      title.includes(keyWords[1]) ||
-      title.includes(keyWords[2])
-    );
-
+    // Ключевые слова (любое)
+    const hasKeyWord = true;//keyWords.some((key) => title.includes(key));
+    // Стоп-слова (любое)
+    const hasStopWord = stopWords.some((stopWord) => title.includes(stopWord));
+    // Оставляем только те, что содержат ключевое слово и НЕ содержат стоп-слово
+    return hasKeyWord && !hasStopWord;
   });
 };
 
@@ -26,12 +36,12 @@ async function addToSupaBase(items) {
     const from = item?.compensation?.from;
     const to = item?.compensation?.to;
     const currency = item?.compensation?.currencyCode?.replace('RUR', 'RUB');
-    const money = !from ?? !to
+    const money = !from && !to
       ? 'Зп не указана'
       : from && !to
       ? `От ${from} ${currency}`
       : !from && to
-      ? `До ${from} ${currency}`
+      ? `До ${to} ${currency}`
       : `${from}-${to} ${currency}`;
     return {
       id: item.vacancyId,
@@ -43,7 +53,6 @@ async function addToSupaBase(items) {
 
   if (itemsToTable.length > 0) {
     try {
-      // Проверяем наличие записей с таким id и sended_to_telegram == true
       const existingItems = await supabase
         .from('hh-kaluga')
         .select('id, sended_to_telegram')
@@ -53,7 +62,6 @@ async function addToSupaBase(items) {
         )
         .eq('sended_to_telegram', true);
 
-      // Фильтруем те элементы, которые уже имеют sended_to_telegram == true
       const filteredItems = itemsToTable.filter((item) => {
         return !existingItems.data.some(
           (existingItem) => existingItem.id === item.id
@@ -87,24 +95,23 @@ async function addToSupaBase(items) {
 const getDataFromHH = () => {
   setInterval(async () => {
     try {
-      //console.log(`${url}&page=${pageNumber}`);
+      // console.log(`${url}&page=${pageNumber}`);
       const response = await axios.get(`${url}`);
       pageNumber += 1;
       const items = response.data.vacancySearchResult.vacancies;
       console.log(`Вакансий всего: ${items.length}`);
 
       // Фильтруем данные
-      //const filteredItems = filterItems(items);
-      console.log(`Вакансий для Калуги: ${items.length}`);
+      const filteredItems = filterItems(items);
+      console.log(`Вакансий после фильтрации: ${filteredItems.length}`);
 
       // Добавляем отфильтрованные данные в базу
-      await addToSupaBase(items);
+      await addToSupaBase(filteredItems);
 
-      //console.log(`Обработано ${filteredItems.length} элементов.`);
     } catch (error) {
-      console.error('Ошибка при получении данных с Avito:', error);
+      console.error('Ошибка при получении данных с HH:', error);
     }
-  }, 6000);
+  }, 60000);
 };
 
 getDataFromHH();

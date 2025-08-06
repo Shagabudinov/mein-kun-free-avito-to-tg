@@ -47,8 +47,8 @@ async def check_and_send():
                 money = record['money']
 
                 message = (
-                    f"<b>{title}</b>\n"
-                    f"Оплата: {money}\n"
+                    f"<b>{title}</b>\n\n"
+                    f"Оплата: {money}\n\n"
                     f"<a href=\"https://hh.ru/vacancy/{id}\">Перейти на HH</a>"
                 )
 
